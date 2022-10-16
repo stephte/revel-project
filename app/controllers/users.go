@@ -1,7 +1,7 @@
 package controllers
 
 import (
-	"revel-app/app/services"
+	"revel-project/app/services"
 	"github.com/mitchellh/mapstructure"
 )
 
