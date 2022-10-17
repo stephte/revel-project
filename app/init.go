@@ -3,10 +3,9 @@ package app
 import (
 	"github.com/revel/revel"
 	_ "github.com/revel/modules"
-	"gorm.io/gorm"
-	"gorm.io/driver/postgres"
 	"revel-project/app/models"
-	"fmt"
+	"github.com/joho/godotenv"
+	"os"
 )
 
 var (
@@ -17,16 +16,36 @@ var (
 	BuildTime string
 )
 
+func LoadEnv() {
+	var err error
+	if (revel.RunMode == "Prod") {
+		revel.AppLog.Error("prod not supported yet")
+		err = godotenv.Load(".env/prod.env")
+	} else {
+		err = godotenv.Load(".env/dev.env")
+	}
+
+	if err != nil {
+		revel.AppLog.Error(err.Error())
+	} else {
+		revel.AppLog.Debug("Successfully Loaded Env")
+	}
+}
+
 func InitDB() {
-	fmt.Println("db.user")
-	fmt.Println(db.user)
-	db, err := models.FireUp()
+	revel.AppLog.Debug("Firing Up DB")
+	db, err := models.FireUp(
+		os.Getenv("REVEL_DBUSER"),
+		os.Getenv("REVEL_DBPASSWORD"),
+		os.Getenv("REVEL_DBNAME"),
+		"5434", // the DB port
+	)
 	
 	if err != nil {
 		panic(err)
 	}
 
-	revel.OnAppStop(models.CoolDown(db))
+	revel.OnAppStop(func() {models.CoolDown(db)})
 }
 
 func init() {
@@ -50,9 +69,8 @@ func init() {
 	// Register startup functions with OnAppStart
 	// revel.DevMode and revel.RunMode only work inside of OnAppStart. See Example Startup Script
 	// ( order dependent )
-	// revel.OnAppStart(ExampleStartupScript)
+	revel.OnAppStart(LoadEnv, 0)
 	revel.OnAppStart(InitDB)
-	// revel.OnAppStart(FillCache)
 }
 
 // HeaderFilter adds common security headers

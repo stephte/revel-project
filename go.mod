@@ -2,10 +2,9 @@ module revel-project
 
 go 1.18
 
-replace github.com/stephte/revel-project => /Users/mac_de_teagan/go/src/github.com/stephte/revel-project
-
 require (
 	github.com/google/uuid v1.3.0
+	github.com/joho/godotenv v1.4.0
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/revel/modules v1.1.0
 	github.com/revel/revel v1.1.0

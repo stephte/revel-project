@@ -3,6 +3,7 @@ package controllers
 import (
 	"revel-project/app/services"
 	"github.com/mitchellh/mapstructure"
+	"github.com/revel/revel"
 )
 
 type UsersController struct {
@@ -31,7 +32,7 @@ func (uc UsersController) Create() revel.Result {
 	var data map[string]interface{}
 	mapstructure.Decode(params, &data)
 
-	response, err := services.UserService.CreateUser(data)
+	response, err := services.UserService{}.CreateUser(data)
 
 	if err != nil {
 		return uc.RenderError(err)

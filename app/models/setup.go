@@ -3,6 +3,7 @@ package models
 import (
 	"fmt"
 	"gorm.io/gorm"
+	"gorm.io/driver/postgres"
 )
 
 // TEMPORARY, definitely better ways to structure DB setup... :)
@@ -10,14 +11,16 @@ import (
 func FireUp(user string, password string, dbname string, port string) (*gorm.DB, error) {
 	connstring := fmt.Sprintf(
 		"host=localhost user=%s password=%s dbname=%s port=%s sslmode=disable",
-		user, password, dbname, port
+		user, password, dbname, port,
 	)
 
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	db, err := gorm.Open(postgres.Open(connstring), &gorm.Config{})
 
 	if err != nil {
 		return db, err
 	}
+
+	db.Exec(`CREATE EXTENSION IF NOT EXISTS "uuid-ossp";`)
 
 	migrate(db)
 
@@ -25,9 +28,16 @@ func FireUp(user string, password string, dbname string, port string) (*gorm.DB,
 }
 
 func CoolDown(db *gorm.DB) {
-	err := db.Close()
-	if err != nil {
-		panic(err)
+	sqlDB, sqlErr := db.DB()
+	
+	if sqlErr != nil {
+		panic(sqlErr)
+	}
+
+	closeErr := sqlDB.Close()
+
+	if closeErr != nil {
+		panic(closeErr)
 	}
 }
 

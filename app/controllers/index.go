@@ -5,14 +5,5 @@ import (
 )
 
 type BaseController struct {
-	*revel.controller
+	*revel.Controller
 }
-
-// type ErrorResponse struct {
-// 	Message string
-// 	Error error
-// }
-
-// func (bc BaseController) ErrorResponse(error) {
-// 	bc.RenderJSON()
-// }

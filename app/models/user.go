@@ -1,14 +1,13 @@
 package models
 
 import (
-	"strings"
 	"errors"
 	"revel-project/app/utilities"
+	"gorm.io/gorm"
 )
 
 type User struct {
 	BaseModel
-	// Key					uuid.UUID	`gorm:"type:uuid;uniqueIndex;not null;default:uuid_generate_v4()"`
 	FirstName							string		`gorm:"not null"`
 	LastName							string		`gorm:"not null"`
 	Email									string		`gorm:"uniqueIndex;not null"`
@@ -28,7 +27,7 @@ func (u *User) BeforeSave(tx *gorm.DB) (err error) {
 
 	u.Email = newEmail
 
-	if u.Password != nil && u.Password != "" {
+	if u.Password != "" {
 		// err := u.handlePassword()
 		if pwErr := u.handlePassword(); pwErr != nil {
 			return pwErr
@@ -43,7 +42,7 @@ func (u *User) handlePassword() error {
 		return errors.New("Password invalid")
 	}
 
-	hash, err = utilities.CreateHash(u.Password)
+	hash, err := utilities.CreateHash(u.Password)
 
 	if err != nil {
 		return err

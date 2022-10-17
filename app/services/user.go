@@ -1,10 +1,8 @@
-package user
+package services
 
 import (
 	"gorm.io/gorm"
-	"encoding/json"
 	"revel-project/app/models"
-	"revel-project/app/utilities"
 	"github.com/mitchellh/mapstructure"
 )
 
@@ -14,17 +12,19 @@ type UserService struct {
 
 func (us UserService) FindUserByKey(userKey string) (models.User, error) {
 	user := models.User{}
-	us.DB.where("Key = $1", userKey).First(&user)
+	if findErr := us.DB.Where("Key = $1", userKey).First(&user).Error; findErr != nil {
+		return user, findErr
+	}
 
-	return user, user.Error
+	return user, nil
 }
 
 func (us UserService) CreateUser(data map[string]interface{}) (map[string]interface{}, error) {
 	var user models.User
-	mapErr := mapstructure.Decode(data, &user)
+	decodeErr := mapstructure.Decode(data, &user)
 
-	if mapErr != nil {
-		return nil, mapErr
+	if decodeErr != nil {
+		return nil, decodeErr
 	}
 
 	if createErr := us.DB.Create(&user).Error; createErr != nil {
@@ -36,7 +36,7 @@ func (us UserService) CreateUser(data map[string]interface{}) (map[string]interf
 	mapErr := mapstructure.Decode(user, &rv)
 
 	if mapErr != nil {
-		return nil, e
+		return nil, mapErr
 	}
 
 	return rv, nil
@@ -49,7 +49,7 @@ func (us UserService) UpdateUser(userKey string, data map[string]interface{}) (e
 		return findErr
 	}
 
-	if updateErr := us.DB.Model(&user).Updates(data).Error; err != nil {
+	if updateErr := us.DB.Model(&user).Updates(data).Error; updateErr != nil {
 		return updateErr
 	}
 
