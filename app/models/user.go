@@ -11,7 +11,7 @@ type User struct {
 	FirstName							string		`gorm:"not null"`
 	LastName							string		`gorm:"not null"`
 	Email									string		`gorm:"uniqueIndex;not null"`
-	Password							string		`gorm:"-:all`
+	Password							string		`gorm:"-"`
 	EncryptedPassword			[]byte		`gorm:"not null"`
 	Role									string		`gorm:"default:'regular'"`
 	PasswordResetToken		string
