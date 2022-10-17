@@ -17,7 +17,9 @@ type UserParams struct {
 }
 
 type CreateUserParams struct {
-	UserParams
+	FirstName 	string	`json:firstName`
+	LastName		string	`json:lastName`
+	Email				string	`json:email`
 	Password		string	`json:password`
 }
 
@@ -32,7 +34,9 @@ func (uc UsersController) Create() revel.Result {
 	var data map[string]interface{}
 	mapstructure.Decode(params, &data)
 
-	response, err := services.UserService{}.CreateUser(data)
+	service := services.UserService{services.InitService()}
+
+	response, err := service.CreateUser(data)
 
 	if err != nil {
 		return uc.RenderError(err)

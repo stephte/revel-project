@@ -1,13 +1,13 @@
 package services
 
 import (
-	"gorm.io/gorm"
+	_ "gorm.io/gorm"
 	"revel-project/app/models"
 	"github.com/mitchellh/mapstructure"
 )
 
 type UserService struct {
-	DB *gorm.DB
+	BaseService
 }
 
 func (us UserService) FindUserByKey(userKey string) (models.User, error) {
@@ -22,7 +22,7 @@ func (us UserService) FindUserByKey(userKey string) (models.User, error) {
 func (us UserService) CreateUser(data map[string]interface{}) (map[string]interface{}, error) {
 	var user models.User
 	decodeErr := mapstructure.Decode(data, &user)
-
+	
 	if decodeErr != nil {
 		return nil, decodeErr
 	}

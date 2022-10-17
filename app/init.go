@@ -5,6 +5,7 @@ import (
 	_ "github.com/revel/modules"
 	"revel-project/app/models"
 	"github.com/joho/godotenv"
+	"gorm.io/gorm"
 	"os"
 )
 
@@ -32,9 +33,13 @@ func LoadEnv() {
 	}
 }
 
+var DB *gorm.DB
+
 func InitDB() {
 	revel.AppLog.Debug("Firing Up DB")
-	db, err := models.FireUp(
+
+	var err error
+	DB, err = models.FireUp(
 		os.Getenv("REVEL_DBUSER"),
 		os.Getenv("REVEL_DBPASSWORD"),
 		os.Getenv("REVEL_DBNAME"),
@@ -45,7 +50,7 @@ func InitDB() {
 		panic(err)
 	}
 
-	revel.OnAppStop(func() {models.CoolDown(db)})
+	revel.OnAppStop(func() {models.CoolDown(DB)})
 }
 
 func init() {
