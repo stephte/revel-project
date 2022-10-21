@@ -4,7 +4,12 @@ import (
 	"errors"
 	"revel-project/app/utilities"
 	"gorm.io/gorm"
+	"fmt"
 )
+
+func getRoles() []string {
+	return []string{"regular", "admin", "super_admin"}
+}
 
 type User struct {
 	BaseModel
@@ -15,6 +20,10 @@ type User struct {
 	EncryptedPassword			[]byte		`gorm:"not null"`
 	Role									string		`gorm:"default:'regular'"`
 	PasswordResetToken		string
+}
+
+func (u *User) FullName() string {
+	return fmt.Sprintf("%s %s", u.FirstName, u.LastName)
 }
 
 func (u *User) BeforeSave(tx *gorm.DB) (err error) {
@@ -32,6 +41,10 @@ func (u *User) BeforeSave(tx *gorm.DB) (err error) {
 		if pwErr := u.handlePassword(); pwErr != nil {
 			return pwErr
 		}
+	}
+
+	if !utilities.StringArrContains(getRoles(), u.Role) {
+		return errors.New("Not a valid User Role")
 	}
 
 	return nil
