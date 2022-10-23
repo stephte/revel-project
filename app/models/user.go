@@ -7,8 +7,12 @@ import (
 	"fmt"
 )
 
-func getRoles() []string {
-	return []string{"regular", "admin", "super_admin"}
+func getRoles() []int {
+	return []int{
+		1, // "regular",
+		2, // "admin",
+		3, // "super_admin"
+	}
 }
 
 type User struct {
@@ -16,10 +20,10 @@ type User struct {
 	FirstName							string		`gorm:"not null"`
 	LastName							string		`gorm:"not null"`
 	Email									string		`gorm:"uniqueIndex;not null"`
+	Role									int				`gorm:"default:0"`
+	PasswordResetToken		string
 	Password							string		`gorm:"-"`
 	EncryptedPassword			[]byte		`gorm:"not null"`
-	Role									string		`gorm:"default:'regular'"`
-	PasswordResetToken		string
 }
 
 func (u *User) FullName() string {
@@ -43,7 +47,9 @@ func (u *User) BeforeSave(tx *gorm.DB) (err error) {
 		}
 	}
 
-	if !utilities.StringArrContains(getRoles(), u.Role) {
+	if u.Role == 0 {
+		u.Role = 1
+	} else if !utilities.IntArrContains(getRoles(), u.Role) {
 		return errors.New("Not a valid User Role")
 	}
 

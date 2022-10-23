@@ -5,7 +5,6 @@ go 1.18
 require (
 	github.com/google/uuid v1.3.0
 	github.com/joho/godotenv v1.4.0
-	github.com/mitchellh/mapstructure v1.5.0
 	github.com/revel/modules v1.1.0
 	github.com/revel/revel v1.1.0
 	golang.org/x/crypto v0.0.0-20221012134737-56aed061732a

@@ -1,9 +1,9 @@
 package services
 
 import (
-	_ "gorm.io/gorm"
 	"revel-project/app/models"
-	"github.com/mitchellh/mapstructure"
+	"revel-project/app/services/dtos"
+	"revel-project/app/services/mappers"
 )
 
 type UserService struct {
@@ -19,29 +19,20 @@ func (us UserService) FindUserByKey(userKey string) (models.User, error) {
 	return user, nil
 }
 
-func (us UserService) CreateUser(data map[string]interface{}) (map[string]interface{}, error) {
-	var user models.User
-	decodeErr := mapstructure.Decode(data, &user)
-	
-	if decodeErr != nil {
-		return nil, decodeErr
-	}
+// takes in CreateUserDTO, returns UserDTO
+func (us UserService) CreateUser(dto dtos.CreateUserDTO) (dtos.UserDTO, error) {
+	user := mappers.MapCreateUserDTOToUser(dto)
 
 	if createErr := us.DB.Create(&user).Error; createErr != nil {
-		return nil, createErr
+		return dtos.UserDTO{}, createErr
 	}
 
-	// convert struct back to map
-	var rv map[string]interface{}
-	mapErr := mapstructure.Decode(user, &rv)
-
-	if mapErr != nil {
-		return nil, mapErr
-	}
+	rv := mappers.MapUserToUserDTO(user)
 
 	return rv, nil
 }
 
+// TODO: update this to work with new DTOs
 func (us UserService) UpdateUser(userKey string, data map[string]interface{}) (error) {
 	user, findErr := us.FindUserByKey(userKey)
 

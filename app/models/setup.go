@@ -42,11 +42,13 @@ func CoolDown(db *gorm.DB) {
 }
 
 func migrate(db *gorm.DB) {
+
+	// fmt.Println("Dropping Users table")
+	// db.Migrator().DropTable(&User{})
+
+	fmt.Println("Migrating...")
 	// add DB table models here
 	db.AutoMigrate(
 		&User{},
 	)
-
-	// removing column/tables/etc goes down here, since AutoMigrate doesn't remove data...?
-
 }
