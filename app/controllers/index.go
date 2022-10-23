@@ -2,15 +2,13 @@ package controllers
 
 import (
 	"github.com/revel/revel"
+	"revel-project/app/services/dtos"
 )
 
 type BaseController struct {
 	*revel.Controller
 }
 
-type ErrorResponse struct {
-	Err 		string		`json:"error"`
-}
 
 func (bc BaseController) RenderErrorJSON(err error, status int) revel.Result {
 	if status == 0 {
@@ -20,5 +18,5 @@ func (bc BaseController) RenderErrorJSON(err error, status int) revel.Result {
 	bc.Response.ContentType = "application/json"
 	bc.Response.Status = status
 
-	return bc.RenderJSON(ErrorResponse{err.Error()})
+	return bc.RenderJSON(dtos.ErrorResponse{err.Error()})
 }
