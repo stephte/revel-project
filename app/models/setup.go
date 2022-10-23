@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"gorm.io/gorm"
 	"gorm.io/driver/postgres"
+	"github.com/revel/revel"
 )
 
 // TEMPORARY, definitely better ways to structure DB setup... :)
@@ -43,10 +44,10 @@ func CoolDown(db *gorm.DB) {
 
 func migrate(db *gorm.DB) {
 
-	// fmt.Println("Dropping Users table")
+	// revel.AppLog.Warn("Dropping Users table")
 	// db.Migrator().DropTable(&User{})
 
-	fmt.Println("Migrating...")
+	revel.AppLog.Info("Migrating...")
 	// add DB table models here
 	db.AutoMigrate(
 		&User{},

@@ -29,14 +29,14 @@ func LoadEnv() {
 	if err != nil {
 		revel.AppLog.Error(err.Error())
 	} else {
-		revel.AppLog.Debug("Successfully Loaded Env")
+		revel.AppLog.Info("Successfully Loaded Env")
 	}
 }
 
 var DB *gorm.DB
 
 func InitDB() {
-	revel.AppLog.Debug("Firing Up DB")
+	revel.AppLog.Info("Firing Up DB")
 
 	var err error
 	DB, err = models.FireUp(
