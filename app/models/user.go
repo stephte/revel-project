@@ -9,9 +9,9 @@ import (
 
 func getRoles() []int {
 	return []int{
-		1, // "regular",
-		2, // "admin",
-		3, // "super_admin"
+		0, // "regular",
+		1, // "admin",
+		2, // "super_admin"
 	}
 }
 
@@ -47,9 +47,7 @@ func (u *User) BeforeSave(tx *gorm.DB) (err error) {
 		}
 	}
 
-	if u.Role == 0 {
-		u.Role = 1
-	} else if !utilities.IntArrContains(getRoles(), u.Role) {
+	if !utilities.IntArrContains(getRoles(), u.Role) {
 		return errors.New("Not a valid User Role")
 	}
 
