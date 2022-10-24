@@ -38,3 +38,13 @@ func MapUserToUserDTO(user models.User) dtos.UserDTO {
 		Role: user.Role,
 	}
 }
+
+func MapUsersToUserDTOs(users []models.User) ([]dtos.UserDTO) {
+	rv := []dtos.UserDTO{}
+
+	for _, user := range users {
+		rv = append(rv, MapUserToUserDTO(user))
+	}
+
+	return rv
+}

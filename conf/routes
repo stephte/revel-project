@@ -26,3 +26,5 @@ GET     /public/*filepath                       Static.Serve("public")
 # *       /:controller/:action                    :controller.:action
 
 POST /users/create                              UsersController.Create
+POST /users/update                              UsersController.Update
+GET /users                                      UsersController.Index
