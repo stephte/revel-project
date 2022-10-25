@@ -10,13 +10,12 @@ type BaseController struct {
 }
 
 
-func (bc BaseController) RenderErrorJSON(err error, status int) revel.Result {
+func (bc BaseController) RenderErrorJSON(err error, status int, relogin bool) revel.Result {
 	if status == 0 {
 		status = 400
 	}
 
-	bc.Response.ContentType = "application/json"
 	bc.Response.Status = status
 
-	return bc.RenderJSON(dtos.ErrorResponse{err.Error()})
+	return bc.RenderJSON(dtos.ErrorResponse{err.Error(), relogin})
 }

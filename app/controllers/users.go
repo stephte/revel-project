@@ -18,7 +18,7 @@ func (uc UsersController) Index() revel.Result {
 	response, err := service.GetUsers()
 
 	if err != nil {
-		return uc.RenderErrorJSON(err, 401)
+		return uc.RenderErrorJSON(err, 401, false)
 	}
 
 	// return response!
@@ -34,7 +34,7 @@ func (uc UsersController) Create() revel.Result {
 	response, err := service.CreateUser(dto)
 
 	if err != nil {
-		return uc.RenderErrorJSON(err, 0)
+		return uc.RenderErrorJSON(err, 0, false)
 	}
 
 	// return response!
@@ -50,7 +50,7 @@ func (uc UsersController) Update() revel.Result {
 	response, err := service.UpdateUser(dto)
 
 	if err != nil {
-		return uc.RenderErrorJSON(err, 0)
+		return uc.RenderErrorJSON(err, 0, false)
 	}
 
 	// return response!
