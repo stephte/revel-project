@@ -1,8 +1,8 @@
 package controllers
 
 import (
-	"revel-project/app/services"
 	"revel-project/app/services/dtos"
+	"revel-project/app/services"
 	"github.com/revel/revel"
 )
 
@@ -10,15 +10,19 @@ type UsersController struct {
 	BaseController
 }
 
-// TODO (once login/user validation impl'd): only admins+ can access this
 // TODO (low priority): implement query ordering and sorting
 func (uc UsersController) Index() revel.Result {
-	service := services.UserService{services.InitService()}
+	errResponse := uc.validateJWT()
+	if errResponse != nil {
+		return errResponse
+	}
 
-	response, err := service.GetUsers()
+	service := services.UserService{services.InitServiceWithCurrentUser(uc.Log, uc.currentUserKey)}
 
-	if err != nil {
-		return uc.RenderErrorJSON(err, 401)
+	response, errDTO := service.GetUsers()
+
+	if errDTO.Exists() {
+		return uc.renderErrorJSON(errDTO)
 	}
 
 	// return response!
@@ -29,12 +33,12 @@ func (uc UsersController) Create() revel.Result {
 	var dto dtos.CreateUserDTO
 	uc.Params.BindJSON(&dto)
 
-	service := services.UserService{services.InitService()}
+	service := services.UserService{services.InitService(uc.Log)}
 
-	response, err := service.CreateUser(dto)
+	response, errDTO := service.CreateUser(dto)
 
-	if err != nil {
-		return uc.RenderErrorJSON(err, 0)
+	if errDTO.Exists() {
+		return uc.renderErrorJSON(errDTO)
 	}
 
 	// return response!
@@ -42,15 +46,20 @@ func (uc UsersController) Create() revel.Result {
 }
 
 func (uc UsersController) Update() revel.Result {
+	errResponse := uc.validateJWT()
+	if errResponse != nil {
+		return errResponse
+	}
+
 	var dto dtos.UserDTO
 	uc.Params.BindJSON(&dto)
 
-	service := services.UserService{services.InitService()}
+	service := services.UserService{services.InitServiceWithCurrentUser(uc.Log, uc.currentUserKey)}
 
-	response, err := service.UpdateUser(dto)
+	response, errDTO := service.UpdateUser(dto)
 
-	if err != nil {
-		return uc.RenderErrorJSON(err, 0)
+	if errDTO.Exists() {
+		return uc.renderErrorJSON(errDTO)
 	}
 
 	// return response!

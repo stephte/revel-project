@@ -2,7 +2,7 @@ package utilities
 
 import (
 	"golang.org/x/crypto/bcrypt"
-	"fmt"
+	"github.com/revel/revel"
 )
 
 func CreateHash(password string) ([]byte, error) {
@@ -18,13 +18,11 @@ func CreateHash(password string) ([]byte, error) {
 func ComparePasswords(pwHash []byte, pwGiven string) bool {
 	err := bcrypt.CompareHashAndPassword(pwHash, []byte(pwGiven))
 
-	if err == nil {
-		return true
-	} else {
-		// log.Error(err)
-		fmt.Println(err)
+	if err != nil {
+		revel.AppLog.Error(err.Error())
 		return false
 	}
+	return true
 }
 
 // TODO: add more rigorous password validation

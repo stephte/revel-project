@@ -4,6 +4,7 @@ import (
 	"errors"
 	"revel-project/app/utilities"
 	"gorm.io/gorm"
+	"strings"
 	"fmt"
 )
 
@@ -32,16 +33,13 @@ func (u *User) FullName() string {
 
 func (u *User) BeforeSave(tx *gorm.DB) (err error) {
 	// first validate email
-	newEmail, emailErr := utilities.HandleEmail(u.Email)
+	emailErr := u.handleEmail()
 
 	if emailErr != nil {
 		return emailErr
 	}
 
-	u.Email = newEmail
-
 	if u.Password != "" {
-		// err := u.handlePassword()
 		if pwErr := u.handlePassword(); pwErr != nil {
 			return pwErr
 		}
@@ -50,6 +48,16 @@ func (u *User) BeforeSave(tx *gorm.DB) (err error) {
 	if !utilities.IntArrContains(getRoles(), u.Role) {
 		return errors.New("Not a valid User Role")
 	}
+
+	return nil
+}
+
+func (u *User) handleEmail() error {
+	if !utilities.IsValidEmail(u.Email) {
+		return errors.New("Invalid email")
+	}
+
+	u.Email = strings.ToLower(u.Email)
 
 	return nil
 }
