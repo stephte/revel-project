@@ -12,12 +12,12 @@ type UsersController struct {
 
 // TODO (low priority): implement query ordering and sorting
 func (uc UsersController) Index() revel.Result {
-	errResponse := uc.validateJWT()
+	errResponse := uc.validateJWT(false)
 	if errResponse != nil {
 		return errResponse
 	}
 
-	service := services.UserService{services.InitServiceWithCurrentUser(uc.Log, uc.currentUserKey)}
+	service := services.UserService{uc.baseService}
 
 	response, errDTO := service.GetUsers()
 
@@ -33,7 +33,8 @@ func (uc UsersController) Create() revel.Result {
 	var dto dtos.CreateUserDTO
 	uc.Params.BindJSON(&dto)
 
-	service := services.UserService{services.InitService(uc.Log)}
+	uc.setBaseService()
+	service := services.UserService{uc.baseService}
 
 	response, errDTO := service.CreateUser(dto)
 
@@ -41,12 +42,11 @@ func (uc UsersController) Create() revel.Result {
 		return uc.renderErrorJSON(errDTO)
 	}
 
-	// return response!
 	return uc.RenderJSON(response)
 }
 
 func (uc UsersController) Update() revel.Result {
-	errResponse := uc.validateJWT()
+	errResponse := uc.validateJWT(false)
 	if errResponse != nil {
 		return errResponse
 	}
@@ -54,7 +54,7 @@ func (uc UsersController) Update() revel.Result {
 	var dto dtos.UserDTO
 	uc.Params.BindJSON(&dto)
 
-	service := services.UserService{services.InitServiceWithCurrentUser(uc.Log, uc.currentUserKey)}
+	service := services.UserService{uc.baseService}
 
 	response, errDTO := service.UpdateUser(dto)
 
@@ -62,6 +62,5 @@ func (uc UsersController) Update() revel.Result {
 		return uc.renderErrorJSON(errDTO)
 	}
 
-	// return response!
 	return uc.RenderJSON(response)
 }

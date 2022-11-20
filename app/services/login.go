@@ -1,6 +1,7 @@
 package services
 
 import (
+	"revel-project/app/services/emails"
 	"revel-project/app/services/dtos"
 	"revel-project/app/utilities"
 	"revel-project/app/models"
@@ -9,47 +10,143 @@ import (
 )
 
 type LoginService struct {
-	BaseService
+	*BaseService
 }
 
-func(this LoginService) LoginUser(credentials dtos.LoginDTO) (dtos.LoginTokenDTO, dtos.ErrorDTO) {
+
+func(this *LoginService) LoginUser(credentials dtos.LoginDTO) (dtos.LoginTokenDTO, dtos.ErrorDTO) {
 	// help protect against brute force attack
-	killSomeTime(967, 2978)
+	utilities.KillSomeTime(967, 2978)
 
-	var user models.User
-	var err error
-	// make sure username + password are correct
-	user, err = this.findUserByEmail(credentials.Email)
-
-	if err != nil {
+	findErr := this.setCurrentUserByEmail(credentials.Email)
+	if findErr != nil {
 		return dtos.LoginTokenDTO{}, dtos.CreateErrorDTO(errors.New("Invalid Credentials"), 0, false)
 	}
 
-	if !utilities.ComparePasswords(user.EncryptedPassword, credentials.Password) {
+	if !this.currentUser.CheckPassword(credentials.Password) {
 		return dtos.LoginTokenDTO{}, dtos.CreateErrorDTO(errors.New("Invalid Credentials"), 0, false)
 	}
 
 	// then create JWT token and return it
-	token, tokenErr := this.genToken(user)
+	token, tokenErrDTO := this.genToken(false)
 
-	if tokenErr != nil {
-		return dtos.LoginTokenDTO{}, dtos.CreateErrorDTO(errors.New("Error logging in"), 500, false)
-	}
-
-	return dtos.LoginTokenDTO{token}, dtos.ErrorDTO{}
+	return dtos.LoginTokenDTO{token}, tokenErrDTO
 }
 
-func (this LoginService) genToken(user models.User) (string, error) {
+
+func(this LoginService) StartPWReset(dto dtos.EmailDTO) (dtos.ErrorDTO) {
+	findErr := this.setCurrentUserByEmail(dto.Email)
+	if findErr != nil {
+		return dtos.ErrorDTO{}
+	}
+
+	randToken := utilities.RandomString(10)
+	tokenHash, hashErr := utilities.CreateHash(randToken)
+	if hashErr != nil {
+		return dtos.CreateErrorDTO(hashErr, 500, false)
+	}
+
+	// reset token expires in 1 hour
+	expirationTS := time.Now().Add(time.Hour * 1).Unix()
+
+	// user.PasswordResetToken = tokenHash
+	if updateErr := this.DB.Model(&this.currentUser).Updates(models.User{PasswordResetToken: tokenHash, PasswordResetExpiration: expirationTS}).Error; updateErr != nil {
+		return dtos.CreateErrorDTO(updateErr, 500, false)
+	}
+
+	// now spin off goroutine and send email with token
+	go this.sendPWResetToken(randToken, dto.Email)
+
+	return dtos.ErrorDTO{}
+}
+
+
+func(this *LoginService) ConfirmResetToken(dto dtos.ConfirmResetTokenDTO) (dtos.LoginTokenDTO, dtos.ErrorDTO) {
+	findErr := this.setCurrentUserByEmail(dto.Email) 
+	if findErr != nil {
+		return dtos.LoginTokenDTO{}, dtos.AccessDeniedError()
+	}
+
+	if !this.currentUser.CheckPWResetToken(dto.Token) {
+		return dtos.LoginTokenDTO{}, dtos.AccessDeniedError()
+	}
+
+	tokenExpired := this.currentUser.PasswordResetExpiration < time.Now().Unix()
+
+	// clear out the User's Reset token
+	if updateErr := this.DB.Model(&this.currentUser).Select("PasswordResetToken", "PasswordResetExpiration").Updates(models.User{PasswordResetToken: nil, PasswordResetExpiration: 0}).Error; updateErr != nil {
+		return dtos.LoginTokenDTO{}, dtos.CreateErrorDTO(updateErr, 500, false)
+	}
+
+	if tokenExpired {
+		return dtos.LoginTokenDTO{}, dtos.CreateErrorDTO(errors.New("Token expired"), 0, false)
+	}
+
+	// create JWT token with PRT set to true, expiration in 1 hour (or less)
+	token, tokenErrDTO := this.genToken(true)
+
+	return dtos.LoginTokenDTO{token}, tokenErrDTO
+}
+
+
+func(this LoginService) UpdateUserPassword(dto dtos.ResetPWDTO) (dtos.LoginTokenDTO, dtos.ErrorDTO) {
+	this.currentUser.Password = dto.Password
+	if saveErr := this.DB.Save(&this.currentUser).Error; saveErr != nil {
+		return dtos.LoginTokenDTO{}, dtos.CreateErrorDTO(errors.New("Invalid Password"), 0, false)
+	}
+
+	// then create new JWT token and return it
+	token, tokenErrDTO := this.genToken(false)
+
+	return dtos.LoginTokenDTO{token}, tokenErrDTO
+}
+
+
+// ---------- Private Methods ----------
+
+
+func(this LoginService) genToken(pwReset bool) (string, dtos.ErrorDTO) {
 	header := dtos.JWTHeaderDTO{
 		Algorithm: "HS256",
 		Type: "JWT",
 	}
 
 	payload := dtos.JWTPayloadDTO{
-		Key: user.Key.String(),
-		Expiration: time.Now().Add(time.Hour * 4).Unix(),
+		Key: this.currentUser.Key.String(),
 		Issuer: "revel-project",
+		CreatedAt: time.Now().Unix(),
 	}
 
-	return generateJWT(header, payload)
+	if pwReset {
+		payload.PRT = true
+		payload.Expiration = time.Now().Add(time.Minute * 30).Unix()
+	} else {
+		payload.Expiration = time.Now().Add(time.Hour * 4).Unix()
+	}
+
+	authService := AuthService{this.BaseService}
+
+	return authService.GenerateJWT(header, payload)
+}
+
+
+func(this LoginService) sendPWResetToken(token string, email string) error {
+	this.log.Debug("Password reset email flow triggered")
+
+	// set up email request
+	request := emails.PWResetEmail{
+		BaseEmailRequest: emails.InitBaseRequest(),
+		Token: token,
+	}
+	request.SetToEmails([]string{email})
+	request.SetSubject("Revel App Password Reset")
+
+	// generate html for email
+	err := request.GenerateAndSetMessage()
+	if err != nil {
+		return err
+	}
+
+	// send email
+	return request.SendEmail()
 }

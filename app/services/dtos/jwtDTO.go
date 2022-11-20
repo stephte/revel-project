@@ -1,20 +1,35 @@
 package dtos
 
-type JWTPayloadDTO struct {
-	Key					string			`json:"key"`
-	Expiration	int64				`json:"exp"`
-	Issuer			string			`json:"iss"`
-}
+import (
+	"time"
+)
+
+// ----- JWT Header -----
 
 type JWTHeaderDTO struct {
 	Algorithm		string			`json:"alg"`
 	Type				string			`json:"typ"`
 }
 
-func(dto JWTPayloadDTO) Exists() bool {
-	return dto.Key != "" && dto.Expiration != 0 && dto.Issuer != ""
+func(this JWTHeaderDTO) Exists() bool {
+	return this.Algorithm != "" && this.Type != ""
 }
 
-func(dto JWTHeaderDTO) Exists() bool {
-	return dto.Algorithm != "" && dto.Type != ""
+
+// ----- JWT Payload ------
+
+type JWTPayloadDTO struct {
+	Key					string			`json:"key"`
+	CreatedAt		int64				`json:"cre"`	// probs dont need
+	Expiration	int64				`json:"exp"`
+	Issuer			string			`json:"iss"`
+	PRT					bool				`json:"prt"`	// is password reset
+}
+
+func(this JWTPayloadDTO) Exists() bool {
+	return this.Key != "" && this.Expiration != 0 && this.Issuer != ""
+}
+
+func(this JWTPayloadDTO) IsActive() bool {
+	return time.Now().Unix() < this.Expiration
 }
