@@ -28,4 +28,8 @@ GET     /public/*filepath                       Static.Serve("public")
 POST /users/create                              UsersController.Create
 POST /users/update                              UsersController.Update
 GET /users                                      UsersController.Index
+
 POST /login                                     LoginController.Login
+POST /reset-password                            LoginController.StartPWReset
+POST /confirm-reset-token                       LoginController.ConfirmPasswordResetToken
+POST /update-password                           LoginController.ResetPassword

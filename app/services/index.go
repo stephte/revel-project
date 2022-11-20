@@ -9,20 +9,39 @@ import (
 )
 
 type BaseService struct {
-	DB *gorm.DB
+	DB 						*gorm.DB
 	log					  logger.MultiLogger // what type does this need to be?
 	currentUser		models.User
 }
 
-func (bs *BaseService) SetCurrentUser(userKey uuid.UUID) {
-	user := models.User{}
-	if findErr := bs.DB.Where("Key = $1", userKey.String()).First(&user).Error; findErr != nil {
+
+func (bs *BaseService) setCurrentUser(userKey uuid.UUID) error {
+	user, findErr := bs.findUserByKey(userKey)
+	if findErr != nil {
 		// log error
-		bs.log.Errorf("User not found: %s", userKey.String())
+		bs.log.Errorf("Can't find user with key: %s", userKey.String())
+		return findErr
 	}
 
 	bs.currentUser = user
+
+	return nil
 }
+
+
+func (bs *BaseService) setCurrentUserByEmail(email string) error {
+	user, findErr := bs.findUserByEmail(email)
+	if findErr != nil {
+		// log error
+		bs.log.Errorf("Can't find user with email: %s", email)
+		return findErr
+	}
+
+	bs.currentUser = user
+
+	return nil
+}
+
 
 func InitService(log logger.MultiLogger) BaseService {
 	return BaseService{
@@ -31,12 +50,6 @@ func InitService(log logger.MultiLogger) BaseService {
 	}
 }
 
-func InitServiceWithCurrentUser(log logger.MultiLogger, userKey uuid.UUID) BaseService {
-	bs := InitService(log)
-	bs.SetCurrentUser(userKey)
-
-	return bs
-}
 
 func (bs BaseService) findUserByKey(userKey uuid.UUID) (models.User, error) {
 	user := models.User{}
@@ -46,6 +59,7 @@ func (bs BaseService) findUserByKey(userKey uuid.UUID) (models.User, error) {
 
 	return user, nil
 }
+
 
 func (bs BaseService) findUserByEmail(userEmail string) (models.User, error) {
 	user := models.User{}
@@ -58,6 +72,5 @@ func (bs BaseService) findUserByEmail(userEmail string) (models.User, error) {
 
 
 func (bs BaseService) validateUserHasAccess(accessNeeded int) bool {
-	// bs.log.Infof("Needed: %d, Has: %d", accessNeeded, bs.currentUser.Role)
 	return bs.currentUser.Role >= accessNeeded
 }
