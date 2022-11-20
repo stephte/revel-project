@@ -14,9 +14,9 @@ func parseFiles(files ...string) (*template.Template, error) {
 
 
 func InitBaseRequest() BaseEmailRequest {
-	bs := BaseEmailRequest{}
-
-	bs.SetFrom(os.Getenv("APP_EMAIL_ADDR"))
+	bs := BaseEmailRequest{
+		from: os.Getenv("APP_EMAIL_ADDR"),
+	}
 
 	return bs
 }

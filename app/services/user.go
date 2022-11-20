@@ -31,7 +31,7 @@ func (this UserService) GetUsers() ([]dtos.UserDTO, dtos.ErrorDTO) {
 
 	var users []models.User
 
-	if err := this.DB.Order("created_at").Find(&users).Error; err != nil {
+	if err := this.db.Order("created_at").Find(&users).Error; err != nil {
 		return nil, dtos.CreateErrorDTO(err, 500, false)
 	}
 
@@ -43,7 +43,7 @@ func (this UserService) GetUsers() ([]dtos.UserDTO, dtos.ErrorDTO) {
 func (this UserService) CreateUser(dto dtos.CreateUserDTO) (dtos.UserDTO, dtos.ErrorDTO) {
 	user := mappers.MapCreateUserDTOToUser(dto)
 
-	if createErr := this.DB.Create(&user).Error; createErr != nil {
+	if createErr := this.db.Create(&user).Error; createErr != nil {
 		return dtos.UserDTO{}, dtos.CreateErrorDTO(createErr, 0, false)
 	}
 
@@ -69,7 +69,7 @@ func (this UserService) UpdateUser(dto dtos.UserDTO) (dtos.UserDTO, dtos.ErrorDT
 	updatedUser := mappers.MapUserDTOToUser(dto)
 
 	// will have issue updating Role to 0 (GORM only updates non-zero fields when updating with struct)
-	if updateErr := this.DB.Model(&user).Updates(updatedUser).Error; updateErr != nil {
+	if updateErr := this.db.Model(&user).Updates(updatedUser).Error; updateErr != nil {
 		return dtos.UserDTO{}, dtos.CreateErrorDTO(updateErr, 0, false)
 	}
 

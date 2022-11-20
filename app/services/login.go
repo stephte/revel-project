@@ -30,7 +30,7 @@ func(this *LoginService) LoginUser(credentials dtos.LoginDTO) (dtos.LoginTokenDT
 	// then create JWT token and return it
 	token, tokenErrDTO := this.genToken(false)
 
-	return dtos.LoginTokenDTO{token}, tokenErrDTO
+	return dtos.LoginTokenDTO{Token: token}, tokenErrDTO
 }
 
 
@@ -50,7 +50,7 @@ func(this LoginService) StartPWReset(dto dtos.EmailDTO) (dtos.ErrorDTO) {
 	expirationTS := time.Now().Add(time.Hour * 1).Unix()
 
 	// user.PasswordResetToken = tokenHash
-	if updateErr := this.DB.Model(&this.currentUser).Updates(models.User{PasswordResetToken: tokenHash, PasswordResetExpiration: expirationTS}).Error; updateErr != nil {
+	if updateErr := this.db.Model(&this.currentUser).Updates(models.User{PasswordResetToken: tokenHash, PasswordResetExpiration: expirationTS}).Error; updateErr != nil {
 		return dtos.CreateErrorDTO(updateErr, 500, false)
 	}
 
@@ -74,7 +74,7 @@ func(this *LoginService) ConfirmResetToken(dto dtos.ConfirmResetTokenDTO) (dtos.
 	tokenExpired := this.currentUser.PasswordResetExpiration < time.Now().Unix()
 
 	// clear out the User's Reset token
-	if updateErr := this.DB.Model(&this.currentUser).Select("PasswordResetToken", "PasswordResetExpiration").Updates(models.User{PasswordResetToken: nil, PasswordResetExpiration: 0}).Error; updateErr != nil {
+	if updateErr := this.db.Model(&this.currentUser).Select("PasswordResetToken", "PasswordResetExpiration").Updates(models.User{PasswordResetToken: nil, PasswordResetExpiration: 0}).Error; updateErr != nil {
 		return dtos.LoginTokenDTO{}, dtos.CreateErrorDTO(updateErr, 500, false)
 	}
 
@@ -85,20 +85,20 @@ func(this *LoginService) ConfirmResetToken(dto dtos.ConfirmResetTokenDTO) (dtos.
 	// create JWT token with PRT set to true, expiration in 1 hour (or less)
 	token, tokenErrDTO := this.genToken(true)
 
-	return dtos.LoginTokenDTO{token}, tokenErrDTO
+	return dtos.LoginTokenDTO{Token: token}, tokenErrDTO
 }
 
 
 func(this LoginService) UpdateUserPassword(dto dtos.ResetPWDTO) (dtos.LoginTokenDTO, dtos.ErrorDTO) {
 	this.currentUser.Password = dto.Password
-	if saveErr := this.DB.Save(&this.currentUser).Error; saveErr != nil {
+	if saveErr := this.db.Save(&this.currentUser).Error; saveErr != nil {
 		return dtos.LoginTokenDTO{}, dtos.CreateErrorDTO(errors.New("Invalid Password"), 0, false)
 	}
 
 	// then create new JWT token and return it
 	token, tokenErrDTO := this.genToken(false)
 
-	return dtos.LoginTokenDTO{token}, tokenErrDTO
+	return dtos.LoginTokenDTO{Token: token}, tokenErrDTO
 }
 
 

@@ -1,11 +1,10 @@
 package app
 
 import (
-	"github.com/revel/revel"
 	_ "github.com/revel/modules"
-	"revel-project/app/models"
 	"github.com/joho/godotenv"
-	"gorm.io/gorm"
+	"github.com/revel/revel"
+	"strconv"
 	"os"
 )
 
@@ -33,24 +32,29 @@ func LoadEnv() {
 	}
 }
 
-var DB *gorm.DB
+var DBConnection DBConn
 
 func InitDB() {
-	revel.AppLog.Info("Firing Up DB")
+	DBConnection = DBConn{}
 
-	var err error
-	DB, err = models.FireUp(
-		os.Getenv("REVEL_DBUSER"),
-		os.Getenv("REVEL_DBPASSWORD"),
-		os.Getenv("REVEL_DBNAME"),
-		"5434", // the DB port
-	)
+	port, err := strconv.Atoi(os.Getenv("REVEL_DBPORT"))
+	if err != nil {
+		panic(err)
+	}
+
+	DBConnection.SetHost(os.Getenv("REVEL_DBHOST"))
+	DBConnection.SetUser(os.Getenv("REVEL_DBUSER"))
+	DBConnection.SetPassword(os.Getenv("REVEL_DBPASSWORD"))
+	DBConnection.SetName(os.Getenv("REVEL_DBNAME"))
+	DBConnection.SetPort(port)
+
+	err = DBConnection.FireUp()
 	
 	if err != nil {
 		panic(err)
 	}
 
-	revel.OnAppStop(func() {models.CoolDown(DB)})
+	revel.OnAppStop(func() {DBConnection.CoolDown()})
 }
 
 func init() {
