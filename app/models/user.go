@@ -70,15 +70,7 @@ func(this *User) BeforeUpdate(tx *gorm.DB) (err error) {
 
 // pure validation checks should go in AfterSave
 func(this *User) AfterSave(tx *gorm.DB) (err error) {
-	if !utilities.IntArrContains(auth.GetUserRoles(), this.Role) {
-		return errors.New("Not a valid User Role")
-	}
-
-	if !utilities.IsValidEmail(this.Email) {
-		return errors.New("Invalid User Email")
-	}
-
-	return nil
+	return this.IsValid()
 }
 
 
@@ -89,6 +81,19 @@ func(this User) CheckPassword(givenPW string) bool {
 
 func(this User) CheckPWResetToken(givenToken string) bool {
 	return auth.CompareStringWithHash(this.PasswordResetToken, givenToken)
+}
+
+// returns error if not valid, nil if is valid
+func(this User) IsValid() error {
+	if !utilities.IntArrContains(auth.GetUserRoles(), this.Role) {
+		return errors.New("Not a valid User Role")
+	}
+
+	if !utilities.IsValidEmail(this.Email) {
+		return errors.New("Invalid User Email")
+	}
+
+	return nil
 }
 
 
