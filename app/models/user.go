@@ -1,6 +1,7 @@
 package models
 
 import (
+	"revel-project/app/utilities/auth"
 	"revel-project/app/utilities"
 	"gorm.io/gorm"
 	"strings"
@@ -8,14 +9,6 @@ import (
 	"time"
 	"fmt"
 )
-
-func getRoles() []int {
-	return []int{
-		1, // "regular",
-		2, // "admin",
-		3, // "super_admin"
-	}
-}
 
 type User struct {
 	BaseModel
@@ -36,57 +29,100 @@ func(u *User) FullName() string {
 }
 
 
-func(u *User) BeforeSave(tx *gorm.DB) (err error) {
-	// first validate email
-	emailErr := u.handleEmail()
+func(this *User) BeforeCreate(tx *gorm.DB) error {
+	this.Email = strings.ToLower(this.Email)
 
-	if emailErr != nil {
-		return emailErr
+	if this.Role == 0 {
+		this.Role = 1
 	}
 
-	if u.Password != "" {
-		if pwErr := u.handlePassword(); pwErr != nil {
-			return pwErr
-		}
-	}
-
-	if u.Role == 0 {
-		u.Role = 1
-	} else if !utilities.IntArrContains(getRoles(), u.Role) {
-		return errors.New("Not a valid User Role")
+	if pwErr := this.handlePassword(); pwErr != nil {
+		return pwErr
 	}
 
 	return nil
 }
 
 
-func(this User) CheckPassword(givenPW string) bool {
-	return utilities.CompareStringWithHash(this.EncryptedPassword, givenPW)
-}
+func(this *User) BeforeUpdate(tx *gorm.DB) (err error) {
+	typ := utilities.GetType(tx.Statement.Dest)
+	
+	// normal User update is assumed to be with a map
+	if typ == "map[string]interface {}" {
+		mp, ok := tx.Statement.Dest.(map[string]interface{})
+		if ok {
+			return this.beforeSaveWithMap(mp, tx)
+		}
 
-func(this User) CheckPWResetToken(givenToken string) bool {
-	return utilities.CompareStringWithHash(this.PasswordResetToken, givenToken)
-}
-
-
-func(u *User) handleEmail() error {
-	if !utilities.IsValidEmail(u.Email) {
-		return errors.New("Invalid email")
+		return errors.New("Invalid map")
 	}
 
-	u.Email = strings.ToLower(u.Email)
+	// this works for password handling since we Save the user with the password already on the User
+	if this.Password != "" {
+		if pwErr := this.handlePassword(); pwErr != nil {
+			return pwErr
+		}
+	}
+
+	return nil
+}
+
+
+// pure validation checks should go in AfterSave
+func(this *User) AfterSave(tx *gorm.DB) (err error) {
+	return this.IsValid()
+}
+
+
+func(this User) CheckPassword(givenPW string) bool {
+	return auth.CompareStringWithHash(this.EncryptedPassword, givenPW)
+}
+
+
+func(this User) CheckPWResetToken(givenToken string) bool {
+	return auth.CompareStringWithHash(this.PasswordResetToken, givenToken)
+}
+
+// returns error if not valid, nil if is valid
+func(this User) IsValid() error {
+	if !utilities.IntArrContains(auth.GetUserRoles(), this.Role) {
+		return errors.New("Not a valid User Role")
+	}
+
+	if !utilities.IsValidEmail(this.Email) {
+		return errors.New("Invalid User Email")
+	}
+
+	return nil
+}
+
+
+// ---------- Private ----------
+
+
+func(this *User) beforeSaveWithMap(data map[string]interface{}, tx *gorm.DB) error {
+	// first check if email key exists
+	genericEmail, exists := data["Email"]
+	if exists {
+		// then get email string from map and update email with lowercase email
+		email, isString := genericEmail.(string)
+		if isString {
+			tx.Statement.SetColumn("Email", strings.ToLower(email))
+		} else {
+			return errors.New("Email must be a string")
+		}
+	}
 
 	return nil
 }
 
 
 func(u *User) handlePassword() error {
-	if !utilities.ValidatePassword(u.Password) {
+	if !auth.ValidatePassword(u.Password) {
 		return errors.New("Password invalid")
 	}
 
-	hash, err := utilities.CreateHash(u.Password)
-
+	hash, err := auth.CreateHash(u.Password)
 	if err != nil {
 		return err
 	}

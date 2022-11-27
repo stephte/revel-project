@@ -17,7 +17,6 @@ type BaseService struct {
 func (bs *BaseService) setCurrentUser(userKey uuid.UUID) error {
 	user, findErr := bs.findUserByKey(userKey)
 	if findErr != nil {
-		// log error
 		bs.log.Errorf("Can't find user with key: %s", userKey.String())
 		return findErr
 	}
@@ -31,7 +30,6 @@ func (bs *BaseService) setCurrentUser(userKey uuid.UUID) error {
 func (bs *BaseService) setCurrentUserByEmail(email string) error {
 	user, findErr := bs.findUserByEmail(email)
 	if findErr != nil {
-		// log error
 		bs.log.Errorf("Can't find user with email: %s", email)
 		return findErr
 	}
