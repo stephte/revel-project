@@ -25,7 +25,7 @@ func(this UserService) GetUser(userKeyStr string) (dtos.UserDTO, dtos.ErrorDTO) 
 		return dtos.UserDTO{}, dtos.CreateErrorDTO(findErr, 404, false)
 	}
 
-	if this.currentUser.ID != user.ID && !this.validateUserHasAccess(auth.AdminAccess()) {
+	if !this.validateUserHasAccess(auth.AdminAccess()) && this.currentUser.ID != user.ID {
 		return dtos.UserDTO{}, dtos.AccessDeniedError()
 	}
 
@@ -103,4 +103,28 @@ func (this UserService) UpdateUser(userKeyStr string, data map[string]interface{
 	}
 
 	return mappers.MapUserToUserDTO(user), dtos.ErrorDTO{}
+}
+
+
+func(this UserService) DeleteUser(userKeyStr string) dtos.ErrorDTO {
+	key, parseErr := uuid.Parse(userKeyStr)
+	if parseErr != nil {
+		return dtos.CreateErrorDTO(parseErr, 0, false)
+	}
+
+	user, findErr := this.findUserByKey(key)
+	if findErr != nil {
+		return dtos.CreateErrorDTO(findErr, 404, false)
+	}
+
+	if !this.validateUserHasAccess(auth.SuperAdminAccess()) && this.currentUser.ID != user.ID {
+		return dtos.AccessDeniedError()
+	}
+
+	// Unscoped actually deletes the User, without it it just sets the 'DeletedAt' field
+	if deleteErr := this.db.Unscoped().Delete(&user).Error; deleteErr != nil {
+		return dtos.CreateErrorDTO(deleteErr, 0, false)
+	}
+
+	return dtos.ErrorDTO{}
 }

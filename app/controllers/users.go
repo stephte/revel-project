@@ -11,7 +11,7 @@ type UsersController struct {
 }
 
 // TODO (low priority): implement query ordering and sorting
-func (uc UsersController) Index() revel.Result {
+func(uc UsersController) Index() revel.Result {
 	errResponse := uc.validateJWT(false)
 	if errResponse != nil {
 		return errResponse
@@ -48,7 +48,7 @@ func(uc UsersController) Find() revel.Result {
 }
 
 
-func (uc UsersController) Create() revel.Result {
+func(uc UsersController) Create() revel.Result {
 	var dto dtos.CreateUserDTO
 	uc.Params.BindJSON(&dto)
 
@@ -68,7 +68,7 @@ func (uc UsersController) Create() revel.Result {
 // this endpoint validates the request data against the UserDTO,
 // but keeps it as a map so that only the included data is updated
 // (GORM only updates non-zero fields when updating with struct)
-func (uc UsersController) Update() revel.Result {
+func(uc UsersController) Update() revel.Result {
 	errResponse := uc.validateJWT(false)
 	if errResponse != nil {
 		return errResponse
@@ -88,4 +88,25 @@ func (uc UsersController) Update() revel.Result {
 	}
 
 	return uc.RenderJSON(userDTO)
+}
+
+
+func(uc UsersController) Delete() revel.Result {
+	errResponse := uc.validateJWT(false)
+	if errResponse != nil {
+		return errResponse
+	}
+
+	userKeyStr := uc.Params.Route.Get("userKey")
+
+	service := services.UserService{uc.baseService}
+
+	errDTO := service.DeleteUser(userKeyStr)
+
+	if errDTO.Exists() {
+		return uc.renderErrorJSON(errDTO)
+	}
+
+	// is there a better way to return just a 200 response?
+	return uc.RenderText("")
 }
