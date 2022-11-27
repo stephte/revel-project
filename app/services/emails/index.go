@@ -28,7 +28,6 @@ func(this BaseEmailRequest) SendEmail() error {
 	if !this.ReadyToSend() {
 		err := errors.New("Email request missing required data; unable to send")
 		revel.AppLog.Error(err.Error())
-		fmt.Println(this)
 		return err
 	}
 

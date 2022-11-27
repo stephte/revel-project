@@ -25,11 +25,14 @@ GET     /public/*filepath                       Static.Serve("public")
 # without having to add them to the routes table.
 # *       /:controller/:action                    :controller.:action
 
-POST /users/create                              UsersController.Create
-POST /users/update                              UsersController.Update
+# Users
 GET /users                                      UsersController.Index
+GET /users/:userKey                             UsersController.Find
+POST /users/create                              UsersController.Create
+POST /users/update/:userKey                     UsersController.Update
 
-POST /login                                     LoginController.Login
-POST /reset-password                            LoginController.StartPWReset
-POST /confirm-reset-token                       LoginController.ConfirmPasswordResetToken
-POST /update-password                           LoginController.ResetPassword
+# Authentication
+POST /auth/login                                     LoginController.Login
+POST /auth/reset-password                            LoginController.StartPWReset
+POST /auth/confirm-reset-token                       LoginController.ConfirmPasswordResetToken
+POST /auth/update-password                           LoginController.ResetPassword

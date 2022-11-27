@@ -19,15 +19,34 @@ func (uc UsersController) Index() revel.Result {
 
 	service := services.UserService{uc.baseService}
 
-	response, errDTO := service.GetUsers()
-
+	userDTOs, errDTO := service.GetUsers()
 	if errDTO.Exists() {
 		return uc.renderErrorJSON(errDTO)
 	}
 
 	// return response!
-	return uc.RenderJSON(response)
+	return uc.RenderJSON(userDTOs)
 }
+
+
+func(uc UsersController) Find() revel.Result {
+	errResponse := uc.validateJWT(false)
+	if errResponse != nil {
+		return errResponse
+	}
+
+	userKeyStr := uc.Params.Route.Get("userKey")
+
+	service := services.UserService{uc.baseService}
+
+	userDTO, errDTO := service.GetUser(userKeyStr)
+	if errDTO.Exists() {
+		return uc.renderErrorJSON(errDTO)
+	}
+
+	return uc.RenderJSON(userDTO)
+}
+
 
 func (uc UsersController) Create() revel.Result {
 	var dto dtos.CreateUserDTO
@@ -36,31 +55,43 @@ func (uc UsersController) Create() revel.Result {
 	uc.setBaseService()
 	service := services.UserService{uc.baseService}
 
-	response, errDTO := service.CreateUser(dto)
+	userDTO, errDTO := service.CreateUser(dto)
 
 	if errDTO.Exists() {
 		return uc.renderErrorJSON(errDTO)
 	}
 
-	return uc.RenderJSON(response)
+	return uc.RenderJSON(userDTO)
 }
 
+
+// this endpoint validates the request data against the UserDTO,
+// but keeps it as a map so that only the included data is updated
+// (GORM only updates non-zero fields when updating with struct)
 func (uc UsersController) Update() revel.Result {
 	errResponse := uc.validateJWT(false)
 	if errResponse != nil {
 		return errResponse
 	}
 
-	var dto dtos.UserDTO
-	uc.Params.BindJSON(&dto)
+	userKeyStr := uc.Params.Route.Get("userKey")
+
+	var data map[string]interface{}
+	uc.Params.BindJSON(&data)
+
+	// validate User update data
+	validatedData, dataErr := dtos.ValidateUserMap(data)
+	if dataErr != nil {
+		return uc.renderErrorJSON(dtos.CreateErrorDTO(dataErr, 0, false))
+	}
 
 	service := services.UserService{uc.baseService}
 
-	response, errDTO := service.UpdateUser(dto)
+	userDTO, errDTO := service.UpdateUser(userKeyStr, validatedData)
 
 	if errDTO.Exists() {
 		return uc.renderErrorJSON(errDTO)
 	}
 
-	return uc.RenderJSON(response)
+	return uc.RenderJSON(userDTO)
 }

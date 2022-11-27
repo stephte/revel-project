@@ -2,9 +2,11 @@ package services
 
 import (
 	"revel-project/app/services/mappers"
+	"revel-project/app/utilities/auth"
 	"revel-project/app/services/dtos"
 	"revel-project/app/models"
 	"github.com/google/uuid"
+	"errors"
 )
 
 type UserService struct {
@@ -12,11 +14,19 @@ type UserService struct {
 }
 
 
-func (this UserService) GetUserByKey(userKey uuid.UUID) (dtos.UserDTO, dtos.ErrorDTO) {
-	user, findErr := this.findUserByKey(userKey)
+func(this UserService) GetUser(userKeyStr string) (dtos.UserDTO, dtos.ErrorDTO) {
+	key, parseErr := uuid.Parse(userKeyStr)
+	if parseErr != nil {
+		return dtos.UserDTO{}, dtos.CreateErrorDTO(parseErr, 0, false)
+	}
 
+	user, findErr := this.findUserByKey(key)
 	if findErr != nil {
 		return dtos.UserDTO{}, dtos.CreateErrorDTO(findErr, 404, false)
+	}
+
+	if this.currentUser.ID != user.ID && !this.validateUserHasAccess(auth.AdminAccess()) {
+		return dtos.UserDTO{}, dtos.AccessDeniedError()
 	}
 
 	return mappers.MapUserToUserDTO(user), dtos.ErrorDTO{}
@@ -25,7 +35,7 @@ func (this UserService) GetUserByKey(userKey uuid.UUID) (dtos.UserDTO, dtos.Erro
 
 // TODO (low priority): implement query ordering and sorting
 func (this UserService) GetUsers() ([]dtos.UserDTO, dtos.ErrorDTO) {
-	if !this.validateUserHasAccess(2) {
+	if !this.validateUserHasAccess(auth.AdminAccess()) {
 		return nil, dtos.AccessDeniedError()
 	}
 
@@ -53,23 +63,36 @@ func (this UserService) CreateUser(dto dtos.CreateUserDTO) (dtos.UserDTO, dtos.E
 }
 
 
-// TODO: think through and make the user updating better
-func (this UserService) UpdateUser(dto dtos.UserDTO) (dtos.UserDTO, dtos.ErrorDTO) {
-	user, findErr := this.findUserByKey(dto.Key)
+func (this UserService) UpdateUser(userKeyStr string, data map[string]interface{}) (dtos.UserDTO, dtos.ErrorDTO) {
+	key, parseErr := uuid.Parse(userKeyStr)
+	if parseErr != nil {
+		return dtos.UserDTO{}, dtos.CreateErrorDTO(parseErr, 0, false)
+	}
 
+	user, findErr := this.findUserByKey(key)
 	if findErr != nil {
 		return dtos.UserDTO{}, dtos.CreateErrorDTO(findErr, 404, false)
 	}
 
-	// handle validation (only super admins can update Role)
-	if ((dto.Role != user.Role) && (this.currentUser.Role < 2)) || (!this.validateUserHasAccess(2) && !(this.currentUser.ID == user.ID)) {
-		return dto, dtos.AccessDeniedError()
+	// check if role exists in data; else resume as if its equal to users current role
+	var role int
+	_, exists := data["Role"]
+	if exists {
+		roleFloat, isFloat := data["Role"].(float64)
+		if !isFloat {
+			return dtos.UserDTO{}, dtos.CreateErrorDTO(errors.New("Role is not a float64"), 0, false)
+		}
+
+		role = int(roleFloat)
+	} else {
+		role = user.Role
 	}
 
-	updatedUser := mappers.MapUserDTOToUser(dto)
+	if !this.validateUserHasAccess(auth.SuperAdminAccess()) && (role != user.Role || this.currentUser.ID != user.ID) {
+		return dtos.UserDTO{}, dtos.AccessDeniedError()
+	}
 
-	// will have issue updating Role to 0 (GORM only updates non-zero fields when updating with struct)
-	if updateErr := this.db.Model(&user).Updates(updatedUser).Error; updateErr != nil {
+	if updateErr := this.db.Model(&user).Updates(data).Error; updateErr != nil {
 		return dtos.UserDTO{}, dtos.CreateErrorDTO(updateErr, 0, false)
 	}
 

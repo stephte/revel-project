@@ -2,8 +2,8 @@ package services
 
 import (
 	"revel-project/app/services/emails"
+	"revel-project/app/utilities/auth"
 	"revel-project/app/services/dtos"
-	"revel-project/app/utilities"
 	"revel-project/app/models"
 	"errors"
 	"time"
@@ -16,7 +16,7 @@ type LoginService struct {
 
 func(this *LoginService) LoginUser(credentials dtos.LoginDTO) (dtos.LoginTokenDTO, dtos.ErrorDTO) {
 	// help protect against brute force attack
-	utilities.KillSomeTime(967, 2978)
+	auth.KillSomeTime(967, 2978)
 
 	findErr := this.setCurrentUserByEmail(credentials.Email)
 	if findErr != nil {
@@ -40,8 +40,8 @@ func(this LoginService) StartPWReset(dto dtos.EmailDTO) (dtos.ErrorDTO) {
 		return dtos.ErrorDTO{}
 	}
 
-	randToken := utilities.RandomString(10)
-	tokenHash, hashErr := utilities.CreateHash(randToken)
+	randToken := auth.RandomString(10)
+	tokenHash, hashErr := auth.CreateHash(randToken)
 	if hashErr != nil {
 		return dtos.CreateErrorDTO(hashErr, 500, false)
 	}
@@ -49,7 +49,6 @@ func(this LoginService) StartPWReset(dto dtos.EmailDTO) (dtos.ErrorDTO) {
 	// reset token expires in 1 hour
 	expirationTS := time.Now().Add(time.Hour * 1).Unix()
 
-	// user.PasswordResetToken = tokenHash
 	if updateErr := this.db.Model(&this.currentUser).Updates(models.User{PasswordResetToken: tokenHash, PasswordResetExpiration: expirationTS}).Error; updateErr != nil {
 		return dtos.CreateErrorDTO(updateErr, 500, false)
 	}
@@ -92,6 +91,7 @@ func(this *LoginService) ConfirmResetToken(dto dtos.ConfirmResetTokenDTO) (dtos.
 func(this LoginService) UpdateUserPassword(dto dtos.ResetPWDTO) (dtos.LoginTokenDTO, dtos.ErrorDTO) {
 	this.currentUser.Password = dto.Password
 	if saveErr := this.db.Save(&this.currentUser).Error; saveErr != nil {
+		this.log.Error(saveErr.Error())
 		return dtos.LoginTokenDTO{}, dtos.CreateErrorDTO(errors.New("Invalid Password"), 0, false)
 	}
 
