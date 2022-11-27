@@ -64,6 +64,12 @@ func (this UserService) CreateUser(dto dtos.CreateUserDTO) (dtos.UserDTO, dtos.E
 
 
 func (this UserService) UpdateUser(userKeyStr string, data map[string]interface{}) (dtos.UserDTO, dtos.ErrorDTO) {
+	// validate User update data
+	validatedData, dataErr := dtos.ValidateUserMap(data)
+	if dataErr != nil {
+		return dtos.UserDTO{}, dtos.CreateErrorDTO(dataErr, 0, false)
+	}
+
 	key, parseErr := uuid.Parse(userKeyStr)
 	if parseErr != nil {
 		return dtos.UserDTO{}, dtos.CreateErrorDTO(parseErr, 0, false)
@@ -76,9 +82,9 @@ func (this UserService) UpdateUser(userKeyStr string, data map[string]interface{
 
 	// check if role exists in data; else resume as if its equal to users current role
 	var role int
-	_, exists := data["Role"]
+	_, exists := validatedData["Role"]
 	if exists {
-		roleFloat, isFloat := data["Role"].(float64)
+		roleFloat, isFloat := validatedData["Role"].(float64)
 		if !isFloat {
 			return dtos.UserDTO{}, dtos.CreateErrorDTO(errors.New("Role is not a float64"), 0, false)
 		}
@@ -92,7 +98,7 @@ func (this UserService) UpdateUser(userKeyStr string, data map[string]interface{
 		return dtos.UserDTO{}, dtos.AccessDeniedError()
 	}
 
-	if updateErr := this.db.Model(&user).Updates(data).Error; updateErr != nil {
+	if updateErr := this.db.Model(&user).Updates(validatedData).Error; updateErr != nil {
 		return dtos.UserDTO{}, dtos.CreateErrorDTO(updateErr, 0, false)
 	}
 

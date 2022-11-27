@@ -79,15 +79,9 @@ func (uc UsersController) Update() revel.Result {
 	var data map[string]interface{}
 	uc.Params.BindJSON(&data)
 
-	// validate User update data
-	validatedData, dataErr := dtos.ValidateUserMap(data)
-	if dataErr != nil {
-		return uc.renderErrorJSON(dtos.CreateErrorDTO(dataErr, 0, false))
-	}
-
 	service := services.UserService{uc.baseService}
 
-	userDTO, errDTO := service.UpdateUser(userKeyStr, validatedData)
+	userDTO, errDTO := service.UpdateUser(userKeyStr, data)
 
 	if errDTO.Exists() {
 		return uc.renderErrorJSON(errDTO)
