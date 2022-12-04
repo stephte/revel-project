@@ -2,7 +2,6 @@ package auth
 
 import (
 	"golang.org/x/crypto/bcrypt"
-	"github.com/revel/revel"
 	"math/rand"
 	"time"
 )
@@ -20,11 +19,7 @@ func CreateHash(str string) ([]byte, error) {
 func CompareStringWithHash(hash []byte, strToComp string) bool {
 	err := bcrypt.CompareHashAndPassword(hash, []byte(strToComp))
 
-	if err != nil {
-		revel.AppLog.Error(err.Error())
-		return false
-	}
-	return true
+	return err == nil
 }
 
 // TODO: add more rigorous password validation
@@ -62,6 +57,7 @@ func KillSomeTime(min int, max int) {
 
 
 // ---------- User access control data -----------
+
 
 func GetUserRoles() []int {
 	return []int{

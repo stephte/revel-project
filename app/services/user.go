@@ -7,29 +7,29 @@ import (
 	"revel-project/app/models"
 	"github.com/google/uuid"
 	"errors"
+	"fmt"
 )
 
 type UserService struct {
 	*BaseService
+	user						models.User
 }
 
 
 func(this UserService) GetUser(userKeyStr string) (dtos.UserDTO, dtos.ErrorDTO) {
-	key, parseErr := uuid.Parse(userKeyStr)
-	if parseErr != nil {
-		return dtos.UserDTO{}, dtos.CreateErrorDTO(parseErr, 0, false)
+	err := this.setUserByKeyStr(userKeyStr)
+	if err != nil {
+		return dtos.UserDTO{}, dtos.CreateErrorDTO(err, 0, false)
 	}
 
-	user, findErr := this.findUserByKey(key)
-	if findErr != nil {
-		return dtos.UserDTO{}, dtos.CreateErrorDTO(findErr, 404, false)
-	}
+	fmt.Println("this.user")
+	fmt.Println(this.user)
 
-	if !this.validateUserHasAccess(auth.AdminAccess()) && this.currentUser.ID != user.ID {
+	if !this.validateUserHasAccess(auth.AdminAccess()) && this.currentUser.ID != this.user.ID {
 		return dtos.UserDTO{}, dtos.AccessDeniedError()
 	}
 
-	return mappers.MapUserToUserDTO(user), dtos.ErrorDTO{}
+	return mappers.MapUserToUserDTO(this.user), dtos.ErrorDTO{}
 }
 
 
@@ -70,14 +70,9 @@ func (this UserService) UpdateUser(userKeyStr string, data map[string]interface{
 		return dtos.UserDTO{}, dtos.CreateErrorDTO(dataErr, 0, false)
 	}
 
-	key, parseErr := uuid.Parse(userKeyStr)
-	if parseErr != nil {
-		return dtos.UserDTO{}, dtos.CreateErrorDTO(parseErr, 0, false)
-	}
-
-	user, findErr := this.findUserByKey(key)
-	if findErr != nil {
-		return dtos.UserDTO{}, dtos.CreateErrorDTO(findErr, 404, false)
+	err := this.setUserByKeyStr(userKeyStr)
+	if err != nil {
+		return dtos.UserDTO{}, dtos.CreateErrorDTO(err, 0, false)
 	}
 
 	// check if role exists in data; else resume as if its equal to users current role
@@ -91,40 +86,55 @@ func (this UserService) UpdateUser(userKeyStr string, data map[string]interface{
 
 		role = int(roleFloat)
 	} else {
-		role = user.Role
+		role = this.user.Role
 	}
 
-	if !this.validateUserHasAccess(auth.SuperAdminAccess()) && (role != user.Role || this.currentUser.ID != user.ID) {
+	if !this.validateUserHasAccess(auth.SuperAdminAccess()) && (role != this.user.Role || this.currentUser.ID != this.user.ID) {
 		return dtos.UserDTO{}, dtos.AccessDeniedError()
 	}
 
-	if updateErr := this.db.Model(&user).Updates(validatedData).Error; updateErr != nil {
+	if updateErr := this.db.Model(&this.user).Updates(validatedData).Error; updateErr != nil {
 		return dtos.UserDTO{}, dtos.CreateErrorDTO(updateErr, 0, false)
 	}
 
-	return mappers.MapUserToUserDTO(user), dtos.ErrorDTO{}
+	return mappers.MapUserToUserDTO(this.user), dtos.ErrorDTO{}
 }
 
 
 func(this UserService) DeleteUser(userKeyStr string) dtos.ErrorDTO {
-	key, parseErr := uuid.Parse(userKeyStr)
-	if parseErr != nil {
-		return dtos.CreateErrorDTO(parseErr, 0, false)
+	err := this.setUserByKeyStr(userKeyStr)
+	if err != nil {
+		return dtos.CreateErrorDTO(err, 0, false)
 	}
 
-	user, findErr := this.findUserByKey(key)
-	if findErr != nil {
-		return dtos.CreateErrorDTO(findErr, 404, false)
-	}
-
-	if !this.validateUserHasAccess(auth.SuperAdminAccess()) && this.currentUser.ID != user.ID {
+	if !this.validateUserHasAccess(auth.SuperAdminAccess()) && this.currentUser.ID != this.user.ID {
 		return dtos.AccessDeniedError()
 	}
 
 	// Unscoped actually deletes the User, without it it just sets the 'DeletedAt' field
-	if deleteErr := this.db.Unscoped().Delete(&user).Error; deleteErr != nil {
+	if deleteErr := this.db.Unscoped().Delete(&this.user).Error; deleteErr != nil {
 		return dtos.CreateErrorDTO(deleteErr, 0, false)
 	}
 
 	return dtos.ErrorDTO{}
+}
+
+
+// ---------- Private ---------
+
+
+func(this *UserService) setUserByKeyStr(userKeyStr string) error {
+	key, parseErr := uuid.Parse(userKeyStr)
+	if parseErr != nil {
+		return parseErr //dtos.CreateErrorDTO(parseErr, 0, false)
+	}
+
+	user, findErr := this.findUserByKey(key)
+	if findErr != nil {
+		return findErr //dtos.CreateErrorDTO(findErr, 404, false)
+	}
+
+	this.user = user
+
+	return nil
 }

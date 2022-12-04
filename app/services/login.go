@@ -92,7 +92,7 @@ func(this LoginService) UpdateUserPassword(dto dtos.ResetPWDTO) (dtos.LoginToken
 	this.currentUser.Password = dto.Password
 	if saveErr := this.db.Save(&this.currentUser).Error; saveErr != nil {
 		this.log.Error(saveErr.Error())
-		return dtos.LoginTokenDTO{}, dtos.CreateErrorDTO(errors.New("Invalid Password"), 0, false)
+		return dtos.LoginTokenDTO{}, dtos.CreateErrorDTO(saveErr, 0, false)
 	}
 
 	// then create new JWT token and return it
