@@ -7,7 +7,6 @@ import (
 	"revel-project/app/models"
 	"github.com/google/uuid"
 	"errors"
-	"fmt"
 )
 
 type UserService struct {
@@ -21,9 +20,6 @@ func(this UserService) GetUser(userKeyStr string) (dtos.UserDTO, dtos.ErrorDTO) 
 	if err != nil {
 		return dtos.UserDTO{}, dtos.CreateErrorDTO(err, 0, false)
 	}
-
-	fmt.Println("this.user")
-	fmt.Println(this.user)
 
 	if !this.validateUserHasAccess(auth.AdminAccess()) && this.currentUser.ID != this.user.ID {
 		return dtos.UserDTO{}, dtos.AccessDeniedError()
