@@ -17,7 +17,7 @@ func(uc UsersController) Index() revel.Result {
 		return errResponse
 	}
 
-	service := services.UserService{uc.baseService}
+	service := services.UserService{BaseService: uc.baseService}
 
 	userDTOs, errDTO := service.GetUsers()
 	if errDTO.Exists() {
@@ -37,7 +37,7 @@ func(uc UsersController) Find() revel.Result {
 
 	userKeyStr := uc.Params.Route.Get("userKey")
 
-	service := services.UserService{uc.baseService}
+	service := services.UserService{BaseService: uc.baseService}
 
 	userDTO, errDTO := service.GetUser(userKeyStr)
 	if errDTO.Exists() {
@@ -53,7 +53,7 @@ func(uc UsersController) Create() revel.Result {
 	uc.Params.BindJSON(&dto)
 
 	uc.setBaseService()
-	service := services.UserService{uc.baseService}
+	service := services.UserService{BaseService: uc.baseService}
 
 	userDTO, errDTO := service.CreateUser(dto)
 
@@ -79,7 +79,7 @@ func(uc UsersController) Update() revel.Result {
 	var data map[string]interface{}
 	uc.Params.BindJSON(&data)
 
-	service := services.UserService{uc.baseService}
+	service := services.UserService{BaseService: uc.baseService}
 
 	userDTO, errDTO := service.UpdateUser(userKeyStr, data)
 
@@ -99,7 +99,7 @@ func(uc UsersController) Delete() revel.Result {
 
 	userKeyStr := uc.Params.Route.Get("userKey")
 
-	service := services.UserService{uc.baseService}
+	service := services.UserService{BaseService: uc.baseService}
 
 	errDTO := service.DeleteUser(userKeyStr)
 

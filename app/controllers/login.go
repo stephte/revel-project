@@ -16,7 +16,7 @@ func(lc LoginController) Login() revel.Result {
 	lc.Params.BindJSON(&dto)
 	
 	lc.setBaseService()
-	service := services.LoginService{lc.baseService}
+	service := services.LoginService{BaseService: lc.baseService}
 
 	tokenDTO, errDTO := service.LoginUser(dto)
 
@@ -33,7 +33,7 @@ func(lc LoginController) StartPWReset() revel.Result {
 	lc.Params.BindJSON(&dto)
 
 	lc.setBaseService()
-	service := services.LoginService{lc.baseService}
+	service := services.LoginService{BaseService: lc.baseService}
 
 	errDTO := service.StartPWReset(dto)
 
@@ -50,7 +50,7 @@ func(lc LoginController) ConfirmPasswordResetToken() revel.Result {
 	lc.Params.BindJSON(&dto)
 
 	lc.setBaseService()
-	service := services.LoginService{lc.baseService}
+	service := services.LoginService{BaseService: lc.baseService}
 
 	res, errDTO := service.ConfirmResetToken(dto)
 
@@ -71,7 +71,7 @@ func(lc LoginController) ResetPassword() revel.Result {
 	var dto dtos.ResetPWDTO
 	lc.Params.BindJSON(&dto)
 
-	service := services.LoginService{lc.baseService}
+	service := services.LoginService{BaseService: lc.baseService}
 	
 	tokenDTO, errDTO := service.UpdateUserPassword(dto)
 

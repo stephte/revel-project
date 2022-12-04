@@ -117,18 +117,22 @@ func(this *User) beforeSaveWithMap(data map[string]interface{}, tx *gorm.DB) err
 }
 
 
-func(u *User) handlePassword() error {
-	if !auth.ValidatePassword(u.Password) {
+func(this *User) handlePassword() error {
+	if !auth.ValidatePassword(this.Password) {
 		return errors.New("Password invalid")
 	}
 
-	hash, err := auth.CreateHash(u.Password)
+	if auth.CompareStringWithHash(this.EncryptedPassword, this.Password) {
+		return errors.New("New password cannot be the same as the current password")
+	}
+
+	hash, err := auth.CreateHash(this.Password)
 	if err != nil {
 		return err
 	}
 
-	u.EncryptedPassword = hash
-	u.PasswordLastUpdated = time.Now().Unix()
+	this.EncryptedPassword = hash
+	this.PasswordLastUpdated = time.Now().Unix()
 
 	return nil
 }
