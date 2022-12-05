@@ -59,6 +59,7 @@ func (this UserService) CreateUser(dto dtos.CreateUserDTO) (dtos.UserDTO, dtos.E
 }
 
 
+// saved via a Map thats validated
 func (this UserService) UpdateUser(userKeyStr string, data map[string]interface{}) (dtos.UserDTO, dtos.ErrorDTO) {
 	// validate User update data
 	validatedData, dataErr := dtos.ValidateUserMap(data)
@@ -90,6 +91,29 @@ func (this UserService) UpdateUser(userKeyStr string, data map[string]interface{
 	}
 
 	if updateErr := this.db.Model(&this.user).Updates(validatedData).Error; updateErr != nil {
+		return dtos.UserDTO{}, dtos.CreateErrorDTO(updateErr, 0, false)
+	}
+
+	return mappers.MapUserToUserDTO(this.user), dtos.ErrorDTO{}
+}
+
+
+// saves via UserDTO thats converted to a User model
+func (this UserService) UpdateUserOG(userKeyStr string, dto dtos.UserDTO) (dtos.UserDTO, dtos.ErrorDTO) {
+	err := this.setUserByKeyStr(userKeyStr)
+	if err != nil {
+		return dtos.UserDTO{}, dtos.CreateErrorDTO(err, 0, false)
+	}
+
+	// handle validation (only super admins can update Role)
+	if !this.validateUserHasAccess(auth.SuperAdminAccess()) && (dto.Role != this.user.Role || this.currentUser.ID != this.user.ID) {
+		return dto, dtos.AccessDeniedError()
+	}
+
+	updatedUser := mappers.MapUserDTOToUser(dto)
+
+	// will have issue updating Role to 0 (GORM only updates non-zero fields when updating with struct)
+	if updateErr := this.db.Model(&this.user).Updates(updatedUser).Error; updateErr != nil {
 		return dtos.UserDTO{}, dtos.CreateErrorDTO(updateErr, 0, false)
 	}
 

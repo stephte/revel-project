@@ -34,7 +34,7 @@ func (bc *BaseController) validateJWT(isPWReset bool) (revel.Result) {
 
 	bc.setBaseService()
 
-	authService := services.AuthService{bc.baseService}
+	authService := services.AuthService{BaseService: bc.baseService}
 	jwtValid, tokenErrDTO := authService.ValidateJWT(token, isPWReset)
 
 	if tokenErrDTO.Exists() {

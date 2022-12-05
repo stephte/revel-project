@@ -54,9 +54,17 @@ func(this *User) BeforeUpdate(tx *gorm.DB) (err error) {
 			return this.beforeSaveWithMap(mp, tx)
 		}
 
-		return errors.New("Invalid map")
+		return errors.New("Internal Error")
+	} else if typ == "models.User" {
+		usr, ok := tx.Statement.Dest.(User)
+		if ok {
+			return this.beforeSaveWithModel(usr, tx)
+		}
+
+		return errors.New("Internal Error")
 	}
 
+	// Password update only works with db.Save(&user) (on purpose, not an issue)
 	// this works for password handling since we Save the user with the password already on the User
 	if this.Password != "" {
 		if pwErr := this.handlePassword(); pwErr != nil {
@@ -111,6 +119,15 @@ func(this *User) beforeSaveWithMap(data map[string]interface{}, tx *gorm.DB) err
 		} else {
 			return errors.New("Email must be a string")
 		}
+	}
+
+	return nil
+}
+
+
+func(this *User) beforeSaveWithModel(data User, tx *gorm.DB) error {
+	if data.Email != "" {
+		tx.Statement.SetColumn("Email", strings.ToLower(data.Email))
 	}
 
 	return nil
