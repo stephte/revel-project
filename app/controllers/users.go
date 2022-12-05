@@ -65,6 +65,7 @@ func(uc UsersController) Create() revel.Result {
 }
 
 
+// PATCH version of User update
 // this endpoint validates the request data against the UserDTO,
 // but keeps it as a map so that only the included data is updated
 // (GORM only updates non-zero fields when updating with struct)
@@ -88,6 +89,30 @@ func(uc UsersController) Update() revel.Result {
 	}
 
 	return uc.RenderJSON(userDTO)
+}
+
+
+// PUT version of User update (expects all user data) (prefer above PATCH version)
+func (uc UsersController) UpdateOG() revel.Result {
+	errResponse := uc.validateJWT(false)
+	if errResponse != nil {
+		return errResponse
+	}
+
+	userKeyStr := uc.Params.Route.Get("userKey")
+
+	var dto dtos.UserDTO
+	uc.Params.BindJSON(&dto)
+
+	service := services.UserService{BaseService: uc.baseService}
+
+	response, errDTO := service.UpdateUserOG(userKeyStr, dto)
+
+	if errDTO.Exists() {
+		return uc.renderErrorJSON(errDTO)
+	}
+
+	return uc.RenderJSON(response)
 }
 
 
