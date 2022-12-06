@@ -29,19 +29,30 @@ func(this UserService) GetUser(userKeyStr string) (dtos.UserDTO, dtos.ErrorDTO) 
 }
 
 
-// TODO (low priority): implement query ordering and sorting
-func (this UserService) GetUsers() ([]dtos.UserDTO, dtos.ErrorDTO) {
+func (this UserService) GetUsers(dto dtos.PaginationDTO, path string) (dtos.PageResponseDTO, dtos.ErrorDTO) {
 	if !this.validateUserHasAccess(auth.AdminAccess()) {
-		return nil, dtos.AccessDeniedError()
+		return dto.GetPageResponse(), dtos.AccessDeniedError()
 	}
+
+	// first get count of total rows
+	var count int64
+	countErr := this.db.Model(&models.User{}).Count(&count).Error
+	if countErr != nil {
+		return dto.GetPageResponse(), dtos.CreateErrorDTO(countErr, 500, false)
+	}
+
+	dto.SetTotalRows(count)
+	dto.GenAndSetData(path) // can call this once TotalRows is set
 
 	var users []models.User
-
-	if err := this.db.Order("created_at").Find(&users).Error; err != nil {
-		return nil, dtos.CreateErrorDTO(err, 500, false)
+	if err := this.db.Limit(dto.GetLimit()).Offset(dto.GetOffset()).Order(dto.GetSort()).Find(&users).Error; err != nil {
+		return dto.GetPageResponse(), dtos.CreateErrorDTO(err, 500, false)
 	}
 
-	return mappers.MapUsersToUserDTOs(users), dtos.ErrorDTO{}
+	userDTOs := mappers.MapUsersToUserDTOs(users)
+	dto.SetRows(userDTOs)
+
+	return dto.GetPageResponse(), dtos.ErrorDTO{}
 }
 
 
