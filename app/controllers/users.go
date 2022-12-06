@@ -10,22 +10,28 @@ type UsersController struct {
 	BaseController
 }
 
-// TODO (low priority): implement query ordering and sorting
+
 func(uc UsersController) Index() revel.Result {
 	errResponse := uc.validateJWT(false)
 	if errResponse != nil {
 		return errResponse
 	}
 
+	dto, paginationErrDTO := uc.getPaginationDTO()
+	if paginationErrDTO.Exists() {
+		return uc.renderErrorJSON(paginationErrDTO)
+	}
+
+	path := uc.getRequestPath()
+
 	service := services.UserService{BaseService: uc.baseService}
 
-	userDTOs, errDTO := service.GetUsers()
+	result, errDTO := service.GetUsers(dto, path)
 	if errDTO.Exists() {
 		return uc.renderErrorJSON(errDTO)
 	}
 
-	// return response!
-	return uc.RenderJSON(userDTOs)
+	return uc.RenderJSON(result)
 }
 
 
