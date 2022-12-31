@@ -2,6 +2,7 @@ package services
 
 import (
 	"revel-project/app/services/mappers"
+	"revel-project/app/services/emails"
 	"revel-project/app/utilities/auth"
 	"revel-project/app/services/dtos"
 	"revel-project/app/models"
@@ -58,11 +59,21 @@ func (this UserService) GetUsers(dto dtos.PaginationDTO, path string) (dtos.Page
 
 // takes in CreateUserDTO, returns UserDTO
 func (this UserService) CreateUser(dto dtos.CreateUserDTO) (dtos.UserDTO, dtos.ErrorDTO) {
+	if dto.Role > auth.RegularAccess()  {
+		if !this.validateUserHasAccess(auth.SuperAdminAccess()) {
+			this.log.Error("Invalid Role: User create with admin attempted by non super-admin")
+			return dtos.UserDTO{}, dtos.CreateErrorDTO(errors.New("Invalid create params"), 0, false)
+		}
+	}
+
 	user := mappers.MapCreateUserDTOToUser(dto)
 
 	if createErr := this.db.Create(&user).Error; createErr != nil {
+		this.log.Warn(createErr.Error())
 		return dtos.UserDTO{}, dtos.CreateErrorDTO(createErr, 0, false)
 	}
+
+	go this.sendSignupEmail(user.Email)
 
 	rv := mappers.MapUserToUserDTO(user)
 
@@ -168,4 +179,24 @@ func(this *UserService) setUserByKeyStr(userKeyStr string) error {
 	this.user = user
 
 	return nil
+}
+
+func(this UserService) sendSignupEmail(email string) error {
+	this.log.Debug("Sending Signup confirmation email")
+
+	request := emails.SignupEmail {
+		BaseEmailRequest: emails.InitBaseRequest(),
+	}
+
+	request.SetToEmails([]string{email})
+	request.SetSubject("Revel App Signup Confirmation")
+
+	// generate html for email
+	err := request.GenerateAndSetMessage()
+	if err != nil {
+		return err
+	}
+
+	// send email
+	return request.SendEmail()
 }
