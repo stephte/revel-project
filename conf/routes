@@ -29,8 +29,8 @@ GET     /public/*filepath                       Static.Serve("public")
 GET     /users                                      UsersController.Index
 GET     /users/:userKey                             UsersController.Find
 POST    /users/create                               UsersController.Create
-PUT     /users/update/:userKey                      UsersController.UpdateOG
-PATCH   /users/update/:userKey                      UsersController.Update
+PUT     /users/:userKey                             UsersController.UpdateOG
+PATCH   /users/:userKey                             UsersController.Update
 DELETE  /users/:userKey                             UsersController.Delete
 
 # Authentication
