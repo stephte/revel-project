@@ -52,7 +52,7 @@ func(this *AuthService) ValidateJWT(jwt string, isPWReset bool) (bool, dtos.Erro
 	splitJWT := strings.Split(jwt, ".")
 
 	if len(splitJWT) != 3 {
-		this.log.Errorf("Token not in 3 parts: %s", jwt)
+		this.log.Warnf("Token not in 3 parts: %s", jwt)
 		return this.invalidTokenErr()
 	}
 

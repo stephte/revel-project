@@ -9,7 +9,11 @@ type UserDTO struct {
 	Role				int			`json:"role"`
 }
 
+// How to get password so we can retrieve it, but not send it??
 type CreateUserDTO struct {
-	UserDTO
-	Password		string	`json:"-"`
+	FirstName 	string
+	LastName		string
+	Email				string
+	Role				int
+	Password		string
 }

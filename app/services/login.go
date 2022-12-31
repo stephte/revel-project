@@ -14,17 +14,19 @@ type LoginService struct {
 }
 
 
-func(this *LoginService) LoginUser(credentials dtos.LoginDTO) (dtos.LoginTokenDTO, dtos.ErrorDTO) {
+func(this *LoginService) LoginUser(credentials dtos.LoginDTO, killTime bool) (dtos.LoginTokenDTO, dtos.ErrorDTO) {
 	// help protect against brute force attack
-	auth.KillSomeTime(967, 2978)
+	if killTime {
+		auth.KillSomeTime(967, 2978)
+	}
 
 	findErr := this.setCurrentUserByEmail(credentials.Email)
 	if findErr != nil {
-		return dtos.LoginTokenDTO{}, dtos.CreateErrorDTO(errors.New("Invalid Credentials"), 0, false)
+		return dtos.LoginTokenDTO{}, dtos.CreateErrorDTO(errors.New("Email or Password Incorrect"), 0, false)
 	}
 
 	if !this.currentUser.CheckPassword(credentials.Password) {
-		return dtos.LoginTokenDTO{}, dtos.CreateErrorDTO(errors.New("Invalid Credentials"), 0, false)
+		return dtos.LoginTokenDTO{}, dtos.CreateErrorDTO(errors.New("Email or Password Incorrect"), 0, false)
 	}
 
 	// then create JWT token and return it
@@ -134,7 +136,7 @@ func(this LoginService) sendPWResetToken(token string, email string) error {
 	this.log.Debug("Password reset email flow triggered")
 
 	// set up email request
-	request := emails.PWResetEmail{
+	request := emails.PWResetEmail {
 		BaseEmailRequest: emails.InitBaseRequest(),
 		Token: token,
 	}

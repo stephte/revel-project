@@ -18,7 +18,7 @@ func(lc LoginController) Login() revel.Result {
 	lc.setBaseService()
 	service := services.LoginService{BaseService: lc.baseService}
 
-	tokenDTO, errDTO := service.LoginUser(dto)
+	tokenDTO, errDTO := service.LoginUser(dto, true)
 
 	if errDTO.Exists() {
 		return lc.renderErrorJSON(errDTO)

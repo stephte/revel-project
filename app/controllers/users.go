@@ -55,10 +55,15 @@ func(uc UsersController) Find() revel.Result {
 
 
 func(uc UsersController) Create() revel.Result {
+	errResponse := uc.validateJWT(false)
+	// Don't return response, don't always need to be authed to create an account
+	if errResponse != nil {
+		uc.Response.Status = 200
+	}
+
 	var dto dtos.CreateUserDTO
 	uc.Params.BindJSON(&dto)
 
-	uc.setBaseService()
 	service := services.UserService{BaseService: uc.baseService}
 
 	userDTO, errDTO := service.CreateUser(dto)
