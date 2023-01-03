@@ -92,3 +92,9 @@ func(bc BaseController) getRequestPath() string {
 
 	return stringsArr[0]
 }
+
+
+func(bc BaseController) blankSuccessResponse() revel.Result {
+	// is there a better way to return just a blank 200 response?
+	return bc.RenderText("")
+}
