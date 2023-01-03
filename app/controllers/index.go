@@ -83,6 +83,7 @@ func(bc BaseController) getPaginationDTO() (dtos.PaginationDTO, dtos.ErrorDTO) {
 	return rv, dtos.ErrorDTO{}
 }
 
+
 func(bc BaseController) getRequestPath() string {
 	url := bc.Request.URL.String()
 
