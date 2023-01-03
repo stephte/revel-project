@@ -143,6 +143,5 @@ func(uc UsersController) Delete() revel.Result {
 		return uc.renderErrorJSON(errDTO)
 	}
 
-	// is there a better way to return just a 200 response?
-	return uc.RenderText("")
+	return uc.blankSuccessResponse()
 }
