@@ -20,6 +20,7 @@ func (t *UserTest) After() {
 	t.CleanupAuth()
 }
 
+
 // ----- User Index -----
 
 func (t *UserTest) TestThatUserIndexRequiresAuth() {
@@ -43,6 +44,7 @@ func (t *UserTest) TestThatUserIndexAcceptsAdminAndSuperAdminAuth() {
 	t.Assert(t.Response.StatusCode == 200)
 }
 
+
 // ----- User find -----
 
 func (t *UserTest) TestUserFindWorks() {
@@ -64,6 +66,7 @@ func (t *UserTest) TestUserFindWorksForAdminUsers() {
 	t.SendAsAdmin("get", fmt.Sprintf("/users/%s", t.regularUser.Key), nil)
 	t.Assert(t.Response.StatusCode == 200)
 }
+
 
 // ----- User create -----
 
@@ -144,6 +147,44 @@ func (t *UserTest) TestValidAdminUserCreate() {
 }
 
 
+func (t *UserTest) TestUserCreateInvalidEmail() {
+	data := map[string]interface{}{
+		"firstName": "Testy",
+		"lastName": "McTest",
+		"email": "testymctest@test",
+		"password": "testpassword7",
+	}
+
+	reqData, jsonErr := json.Marshal(data)
+	if jsonErr != nil {
+		panic(jsonErr)
+	}
+
+	t.SendAsNoOne("post", "/users/create", reqData)
+
+	t.Assert(t.Response.StatusCode == 400)
+}
+
+
+func (t *UserTest) TestUserCreateInvalidPassword() {
+	data := map[string]interface{}{
+		"firstName": "Testy",
+		"lastName": "McTest",
+		"email": "testymctest@test",
+		"password": "testpassword7",
+	}
+
+	reqData, jsonErr := json.Marshal(data)
+	if jsonErr != nil {
+		panic(jsonErr)
+	}
+
+	t.SendAsNoOne("post", "/users/create", reqData)
+
+	t.Assert(t.Response.StatusCode == 400)
+}
+
+
 // ----- User update (PATCH) -----
 
 func (t *UserTest) TestUserUpdateWorksForUser() {
@@ -165,6 +206,7 @@ func (t *UserTest) TestUserUpdateWorksForUser() {
 	t.Assert(body.FirstName == "Testie")
 }
 
+
 func (t *UserTest) TestUserUpdateFailsForOtherUser() {
 	data := map[string]interface{}{
 		"firstName": "Testie",
@@ -178,6 +220,7 @@ func (t *UserTest) TestUserUpdateFailsForOtherUser() {
 	t.SendAsRegularUser("patch", fmt.Sprintf("/users/%s", t.adminUser.Key), reqData)
 	t.Assert(t.Response.StatusCode == 401)
 }
+
 
 func (t *UserTest) TestUserUpdateWorksForSuperAdmin() {
 	data := map[string]interface{}{
@@ -236,6 +279,22 @@ func (t *UserTest) TestAdminCanNotUpdateRole() {
 	t.Assert(t.Response.StatusCode == 401)
 }
 
+
+func (t *UserTest) TestUserUpdateInvalidEmail() {
+	data := map[string]interface{}{
+		"email": "test.com",
+	}
+
+	reqData, jsonErr := json.Marshal(data)
+	if jsonErr != nil {
+		panic(jsonErr)
+	}
+
+	t.SendAsRegularUser("patch", fmt.Sprintf("/users/%s", t.regularUser.Key), reqData)
+	t.Assert(t.Response.StatusCode == 400)
+}
+
+
 // ----- User update OG (PUT) -----
 
 func (t *UserTest) TestUserUpdateOGWorksForUser() {
@@ -263,6 +322,7 @@ func (t *UserTest) TestUserUpdateOGWorksForUser() {
 	t.Assert(body.Role == t.regularUser.Role)
 }
 
+
 func (t *UserTest) TestUserUpdateOGFailsForOtherUser() {
 	data := map[string]interface{}{
 		"firstName": "Testie",
@@ -279,6 +339,7 @@ func (t *UserTest) TestUserUpdateOGFailsForOtherUser() {
 	t.SendAsRegularUser("put", fmt.Sprintf("/users/%s", t.adminUser.Key), reqData)
 	t.Assert(t.Response.StatusCode == 401)
 }
+
 
 func (t *UserTest) TestUserUpdateOGWorksForSuperAdmin() {
 	data := map[string]interface{}{
@@ -329,6 +390,24 @@ func (t *UserTest) TestSuperAdminCanUpdateRoleWithOG() {
 	t.Assert(body.Role == 2)
 	t.Assert(body.LastName == t.regularUser.LastName)
 	t.Assert(body.Email == t.regularUser.Email)
+}
+
+
+func (t *UserTest) TestUserUpdateOGInvalidEmail() {
+	data := map[string]interface{}{
+		"firstName": t.regularUser.FirstName,
+		"lastName": t.regularUser.LastName,
+		"email": "fake@email.",
+		"role": t.regularUser.Role,
+	}
+
+	reqData, jsonErr := json.Marshal(data)
+	if jsonErr != nil {
+		panic(jsonErr)
+	}
+
+	t.SendAsRegularUser("put", fmt.Sprintf("/users/%s", t.regularUser.Key), reqData)
+	t.Assert(t.Response.StatusCode == 400)
 }
 
 
